@@ -114,8 +114,10 @@ class BernoulliVAEIOP:
 
     def _loss_VAE(self, x, k=1, beta=1):
         RE, KL = self._compute_RE_and_KL(x, k=k)
-        RE_sum = RE.sum()
-        KL_sum = KL.sum()
+        # RE_sum = RE.sum()
+        # KL_sum = KL.sum()
+        RE_sum = torch.sum(RE)
+        KL_sum = torch.sum(KL)
         loss = RE_sum + beta * KL_sum
         return loss, RE_sum, KL_sum
 
@@ -192,7 +194,10 @@ class BernoulliVAEIOP:
             self.reconstruction_errors.append(mean_RE)
             self.kl_divergences.append(mean_KL)
 
-            print(f"VAE epoch: {epoch_primal} / Train: {mean_loss:0.3f} / RE: {mean_RE:0.3f} / KL: {mean_KL:0.3f}", end='')
+            print(
+                f"VAE epoch: {epoch_primal} / Train: {mean_loss:0.3f} / RE: {mean_RE:0.3f} / KL: {mean_KL:0.3f}",
+                end=''
+            )
 
             if warm_up and epoch_primal < warm_up_epoch:
                 print(" / Warm-up", end='')
@@ -206,7 +211,8 @@ class BernoulliVAEIOP:
             print('')
 
         if is_stoppable:
-            self.network.load_state_dict(torch.load(path))
+            self.network.load_state_dict(torch.load(path + "_network"))
+            self.discriminator.load_state_dict(torch.load(path + "_discriminator"))
 
         self.network.eval()
         self.discriminator.eval()
@@ -214,7 +220,8 @@ class BernoulliVAEIOP:
     def _early_stopping(self, valid_loss, path):
         if valid_loss < self.min_valid_loss:
             self.min_valid_loss = valid_loss
-            torch.save(self.network.state_dict(), path)
+            torch.save(self.network.state_dict(), path + "_network")
+            torch.save(self.discriminator.state_dict(), path + "_discriminator")
             print(" / Save", end='')
 
     def encode(self, X):
